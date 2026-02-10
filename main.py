@@ -5,31 +5,46 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 import joblib
 import os
+import time
+from nba_api.stats.endpoints import leaguegamefinder, leaguedashteamstats
 
-# Load data
-print("Loading data...")
-games_df = pd.read_csv('data/games.csv')
-players_df = pd.read_csv('data/players.csv')
-teams_df = pd.read_csv('data/teams.csv')
-ranking_df = pd.read_csv('data/ranking.csv')
-games_details_df = pd.read_csv('data/games_details.csv')
+# Fetch data from NBA API
+print("Fetching NBA data from API...")
 
+# Get games - use LeagueGameFinder without season filter to get all recent games
+print("Fetching games data...")
+games_finder = leaguegamefinder.LeagueGameFinder()
+games_df = games_finder.get_data_frames()[0]
 print(f"Games data shape: {games_df.shape}")
-print(f"Players data shape: {players_df.shape}")
-print(f"Teams data shape: {teams_df.shape}")
-print(f"Ranking data shape: {ranking_df.shape}")
-print(f"Games details data shape: {games_details_df.shape}")
 
-# Prepare features and target using the games dataset
-# Select features (excluding game metadata and target variable)
+# Filter to a specific season if needed (2023-24 season)
+games_df['GAME_DATE'] = pd.to_datetime(games_df['GAME_DATE'])
+games_df = games_df.sort_values('GAME_DATE')
+print(f"Games data shape after sorting: {games_df.shape}")
+
+# Get team stats for 2023-24 season
+print("Fetching team stats...")
+team_stats = leaguedashteamstats.LeagueDashTeamStats(season='2023-24')
+teams_df = team_stats.get_data_frames()[0]
+print(f"Teams data shape: {teams_df.shape}")
+
+print("Data fetching complete!")
+
+# Prepare features and target from games data
+print("\nPreparing features and target...")
+
+# Create a target variable: 1 if team won (WL == 'W'), 0 otherwise
+games_df['HOME_TEAM_WINS'] = (games_df['WL'] == 'W').astype(int)
+
+# Select features from available game stats columns
 feature_cols = [
-    'FG_PCT_home', 'FT_PCT_home', 'FG3_PCT_home', 'AST_home', 'REB_home',
-    'FG_PCT_away', 'FT_PCT_away', 'FG3_PCT_away', 'AST_away', 'REB_away'
+    'FG_PCT', 'FT_PCT', 'FG3_PCT', 'AST', 'REB',
+    'OREB', 'DREB', 'STL', 'BLK', 'TOV'
 ]
 
-# Check available features
+# Check which features are available
 available_features = [col for col in feature_cols if col in games_df.columns]
-print(f"\nUsing features: {available_features}")
+print(f"Using features: {available_features}")
 
 X = games_df[available_features].copy()
 y = games_df['HOME_TEAM_WINS'].copy()
