@@ -9,4 +9,5 @@ df = pd.read_csv(csv_path) # read the csv file into a pandas dataframe
 
 ''' Training Random Forest Classifier '''
 # split data into features and target
-
+X = df.drop(columns=['WL'])
+y = df['WL']

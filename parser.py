@@ -3,7 +3,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 import pandas as pd
 import os 
 
-def fetch_nba_games(start_season='2023-24', output_file='nba_games_2023_onwards.csv'):
+def fetch_nba_games(start_season='2023-24', output_file='games.csv'):
     """
     Fetch NBA games from start_season onwards and save to CSV in the 'data/' folder.
     """
