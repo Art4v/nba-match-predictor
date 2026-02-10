@@ -1,4 +1,3 @@
-# nba_data_fetch.py
 from nba_api.stats.endpoints import leaguegamefinder
 import pandas as pd
 import os 
@@ -37,6 +36,23 @@ def fetch_nba_games(start_season='2023-24', output_file='games.csv'):
 
     # convert 'WL' to numeric for ML (W=1, L=0)
     games_df['WL'] = games_df['WL'].map({'W': 1, 'L': 0})
+
+    # convert GAME_DATE to datetime safely
+    games_df['GAME_DATE'] = pd.to_datetime(games_df['GAME_DATE'], errors='coerce')
+
+    # extract numeric date features
+    games_df['GAME_MONTH'] = games_df['GAME_DATE'].dt.month
+    games_df['GAME_DAY'] = games_df['GAME_DATE'].dt.day
+    games_df['GAME_WEEKDAY'] = games_df['GAME_DATE'].dt.weekday  # 0 = Monday
+
+    # encode home/away from MATCHUP
+    games_df['IS_HOME'] = games_df['MATCHUP'].str.contains(' vs ').astype(int)  # 1=home, 0=away
+
+    # convert WL to numeric for ML
+    games_df['WL'] = games_df['WL'].map({'W': 1, 'L': 0})
+
+    # drop original string/date columns that are no longer needed for ML
+    games_df = games_df.drop(columns=['GAME_DATE', 'MATCHUP', 'TEAM_NAME', 'TEAM_ABBREVIATION'])
 
     # save to CSV in the data folder
     games_df.to_csv(file_path, index=False)
